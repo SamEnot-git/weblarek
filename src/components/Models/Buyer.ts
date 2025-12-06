@@ -39,22 +39,24 @@ export class Buyer {
   validate(): IValidationResult {
     const errors: IValidationResult = {};
 
-    if (!this.data.payment || this.data.payment.trim() === '') {
-      errors.payment = 'Не выбран вид оплаты';
+     if (!this.isValidPayment()) { 
+      errors.payment = 'Не выбран вид оплаты'; 
     }
 
-    if (!this.data.email || this.data.email.trim() === '') {
+    if (!this.isValidEmailField()) { 
+      if (!this.data.email || this.data.email.trim() === '') {
       errors.email = 'Укажите емэйл';
-    } else if (!this.isValidEmail(this.data.email)) {
+    } else {
       errors.email = 'Укажите корректный емэйл';
     }
+  }
 
-    if (!this.data.phone || this.data.phone.trim() === '') {
-      errors.phone = 'Укажите телефон';
+    if (!this.isValidPhone()) { 
+      errors.phone = 'Укажите телефон'; 
     }
 
-    if (!this.data.address || this.data.address.trim() === '') {
-      errors.address = 'Укажите адрес';
+     if (!this.isValidAddress()) { 
+      errors.address = 'Укажите адрес'; 
     }
 
     return errors;

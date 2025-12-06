@@ -29,9 +29,9 @@ async function main() {
     productsModel.setItems(productsResponse.items);
     console.log(`Загружено товаров: ${productsResponse.items.length}`);
   } catch (error) {
-    console.warn('Не удалось загрузить товары с сервера, используем локальные данные:', error);
-    productsModel.setItems(apiProducts.items);
-    console.log(`Использовано локальных товаров: ${apiProducts.items.length}`);
+    console.error('Не удалось загрузить товары с сервера:', error);
+    productsModel.setItems([]); 
+    console.warn('Каталог товаров будет пустым из-за ошибки загрузки');
   }
 
   // Тестирование ProductList
