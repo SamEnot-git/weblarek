@@ -1,0 +1,31 @@
+import { IProduct } from '../../types';
+
+export class ProductList {
+  private items: IProduct[] = [];
+  private selectedItem: IProduct | null = null;
+
+  setItems(items: IProduct[]): void {
+    this.items = items;
+  }
+
+  getItems(): IProduct[] {
+    return this.items;
+  }
+
+  getItemById(id: string): IProduct | undefined {
+    return this.items.find(item => item.id === id);
+  }
+
+  // Принимаем и undefined тоже
+  setSelectedItem(item: IProduct | null | undefined): void {
+    if (item === undefined) {
+      this.selectedItem = null;
+    } else {
+      this.selectedItem = item;
+    }
+  }
+
+  getSelectedItem(): IProduct | null {
+    return this.selectedItem;
+  }
+}
