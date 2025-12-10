@@ -1,11 +1,17 @@
-import { IProduct } from '../../types';
+import type { IProduct } from '../../types';
+import type { IEvents } from '../base/Events';
 
 export class ProductList {
   private items: IProduct[] = [];
   private selectedItem: IProduct | null = null;
 
+  constructor(private events: IEvents) {}
+
+  // сохранить массив товаров и сообщить презентеру
   setItems(items: IProduct[]): void {
     this.items = items;
+    // уведомляем презентер, что каталог обновился
+    this.events.emit('catalog:changed', {} as object);
   }
 
   getItems(): IProduct[] {
@@ -16,13 +22,11 @@ export class ProductList {
     return this.items.find(item => item.id === id);
   }
 
-  // Принимаем и undefined тоже
+  // сохранить выбранный товар и сообщить презентеру
   setSelectedItem(item: IProduct | null | undefined): void {
-    if (item === undefined) {
-      this.selectedItem = null;
-    } else {
-      this.selectedItem = item;
-    }
+    this.selectedItem = item ?? null;
+    // уведомляем, что выбранный товар изменился
+    this.events.emit('product:selected', {} as object);
   }
 
   getSelectedItem(): IProduct | null {

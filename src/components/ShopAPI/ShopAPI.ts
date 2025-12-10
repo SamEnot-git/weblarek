@@ -21,7 +21,7 @@ export class ShopAPI implements IShopAPI {
    */
   async createOrder(order: IOrderRequest): Promise<IOrderResponse> {
     try {
-      const response = await this.baseApi.post<IOrderResponse>('order', order);
+      const response = await this.baseApi.post<IOrderResponse>('/order', order);
       return response;
     } catch (error) {
       console.error('Ошибка при создании заказа:', error);
