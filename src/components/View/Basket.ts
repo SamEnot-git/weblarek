@@ -35,25 +35,33 @@ export class Basket extends Component<IBasket> {
 		});
 	}
 
-	render(data: IBasket): HTMLElement {
-		const { items, total } = data;
+	set items(products: IProduct[]) {
+	this.list.replaceChildren();
 
-		this.list.replaceChildren();
-
-		if (!items.length) {
-			this.orderButton.disabled = true;
-			this.list.textContent = 'Корзина пуста';
-		} else {
-			this.orderButton.disabled = false;
-			const nodes = items.map((product, index) => {
-				const item = new BasketItem(this.events, this.itemTemplate);
-				return item.render({ product, index: index + 1 });
-			});
-			this.list.replaceChildren(...nodes);
-		}
-
-		this.totalElement.textContent = `${total} синапсов`;
-
-		return this.container;
+	if (products.length === 0) {
+		this.orderButton.disabled = true;
+		this.list.textContent = 'Корзина пуста';
+		return;
 	}
+
+	this.orderButton.disabled = false;
+
+	const nodes = products.map((product, index) => {
+		const item = new BasketItem(this.events, this.itemTemplate);
+
+		return item.render({
+			id: product.id,
+			title: product.title,
+			price: product.price,
+			index: index + 1,
+		});
+	});
+
+	this.list.replaceChildren(...nodes);
+}	
+
+	set total(value: number) {
+		this.totalElement.textContent = `${value} синапсов`;
+	}	
 }
+

@@ -2,12 +2,12 @@ import { Component } from '../base/Component';
 import { ensureElement } from '../../utils/utils';
 import type { IEvents } from '../base/Events';
 
-interface IFormState {
+export interface IFormState {
 	valid: boolean;
 	errors: string;
 }
 
-export abstract class Form<T> extends Component<T & IFormState> {
+export abstract class Form<T extends IFormState> extends Component<T> {
 	protected form: HTMLFormElement;
 	protected submitButton: HTMLButtonElement;
 	protected errorsElement: HTMLElement;
@@ -25,7 +25,7 @@ export abstract class Form<T> extends Component<T & IFormState> {
 			this.form
 		);
 
-		this.errorsElement = ensureElement<HTMLElement>(
+		 this.errorsElement = ensureElement<HTMLElement>(
 			'.form__errors',
 			this.form
 		);
@@ -38,10 +38,5 @@ export abstract class Form<T> extends Component<T & IFormState> {
 	set errors(value: string) {
 		this.errorsElement.textContent = value;
 	}
-
-	render(data: T & IFormState): HTMLElement {
-		this.valid = data.valid;
-		this.errors = data.errors;
-		return this.container;
-	}
 }
+

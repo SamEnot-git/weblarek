@@ -24,6 +24,7 @@ export class OrderForm extends Form<IOrderForm> {
 		this.buttons = this.form.querySelectorAll<HTMLButtonElement>(
 			'.order__buttons .button'
 		);
+
 		this.addressInput = ensureElement<HTMLInputElement>(
 			'input[name="address"]',
 			this.form
@@ -38,6 +39,7 @@ export class OrderForm extends Form<IOrderForm> {
 				button.classList.add('button_alt-active');
 
 				const payment = button.name as TPayment;
+
 				this.events.emit('order:change', {
 					payment,
 					address: this.addressInput.value,
@@ -53,9 +55,10 @@ export class OrderForm extends Form<IOrderForm> {
 			});
 		});
 
-		// отправка формы 
+		// отправка формы
 		this.form.addEventListener('submit', (event) => {
 			event.preventDefault();
+
 			this.events.emit('order:submit', {
 				payment: this.getPayment(),
 				address: this.addressInput.value,
@@ -70,20 +73,17 @@ export class OrderForm extends Form<IOrderForm> {
 		return active?.name as TPayment | undefined;
 	}
 
-	render(data: IOrderForm): HTMLElement {
-		super.render(data);
+	set address(value: string | undefined) {
+		this.addressInput.value = value ?? '';
+	}
 
-		if (data.address !== undefined) {
-			this.addressInput.value = data.address;
-		}
-
+	set payment(value: TPayment | undefined) {
 		this.buttons.forEach((button) => {
 			button.classList.toggle(
 				'button_alt-active',
-				data.payment !== undefined && button.name === data.payment
+				value !== undefined && button.name === value
 			);
 		});
-
-		return this.container;
 	}
 }
+

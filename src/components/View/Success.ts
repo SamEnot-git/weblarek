@@ -1,6 +1,6 @@
 import { cloneTemplate, ensureElement } from '../../utils/utils';
 import { Component } from '../base/Component';
-import type { IEvents} from '../base/Events';
+import type { IEvents } from '../base/Events';
 
 interface ISuccess {
 	total: number;
@@ -28,10 +28,10 @@ export class Success extends Component<ISuccess> {
 		this.closeButton.addEventListener('click', () => {
 			this.events.emit('success:close');
 		});
-	}
+	}	
 
-	render(data: ISuccess): HTMLElement {
-		this.description.textContent = `Списано ${data.total} синапсов`;
-		return this.container;
+	set total(value: number) {
+		this.description.textContent = `Списано ${value} синапсов`;
 	}
 }
+

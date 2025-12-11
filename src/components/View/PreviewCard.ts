@@ -1,54 +1,103 @@
 import { cloneTemplate, ensureElement } from '../../utils/utils';
 import type { IEvents } from '../base/Events';
-import type { IProduct } from '../../types';
-import { Card } from './Card';
+import { Card, ICardState } from './Card';
+import { CDN_URL, categoryMap } from '../../utils/constants';
 
-interface IPreviewCard {
-	product: IProduct;
+interface IPreviewCardState extends ICardState {
+	id: string;
+	image: string;
+	category: keyof typeof categoryMap;
+	description: string;
 	inBasket: boolean;
 }
 
-export class PreviewCard extends Card {
-	protected description: HTMLElement;
-	protected inBasket = false; // флаг, в корзине ли товар
+export class PreviewCard extends Card<IPreviewCardState> {
+	protected imageElement: HTMLImageElement;
+	protected categoryElement: HTMLElement;
+	protected descriptionElement: HTMLElement;
+	protected buttonElement: HTMLButtonElement;
+	
+	private _id: string | null = null;	
+	private _price: number | null = null;
 
 	constructor(
 		protected events: IEvents,
 		template: HTMLTemplateElement
 	) {
-		super(cloneTemplate<HTMLDivElement>(template));
+		const container = cloneTemplate<HTMLDivElement>(template);
+		super(container);
 
-		this.description = ensureElement<HTMLElement>('.card__text', this.container);
+		this.imageElement = ensureElement<HTMLImageElement>(
+			'.card__image',
+			this.container
+		);
+		this.categoryElement = ensureElement<HTMLElement>(
+			'.card__category',
+			this.container
+		);
+		this.descriptionElement = ensureElement<HTMLElement>(
+			'.card__text',
+			this.container
+		);
+		this.buttonElement = ensureElement<HTMLButtonElement>(
+			'.card__button',
+			this.container
+		);
+	
+		this.buttonElement.addEventListener('click', (event) => {
+			event.stopPropagation();
 
-		if (this.button) {
-			this.button.addEventListener('click', (event) => {
-				event.stopPropagation();
-				if (!this.currentProduct || this.currentProduct.price === null) return;
+			if (!this._id) return;
+			
+			if (this._price === null) return;
 
-				if (this.inBasket) {
-					// товар уже в корзине — удаляем
-					this.events.emit('card:remove', { id: this.currentProduct.id });
-				} else {
-					// товара нет в корзине — добавляем
-					this.events.emit('card:add', { id: this.currentProduct.id });
-				}
-			});
+			this.events.emit('preview:toggle', { id: this._id });
+		});
+	}
+
+	// =============== СЕТТЕРЫ  =================
+
+	set id(value: string) {
+		this._id = value;
+	}
+
+	set image(value: string) {
+		const src = `${CDN_URL}/${value}`;
+		this.setImage(this.imageElement, src, this.titleElement.textContent || '');
+	}
+
+	set category(value: keyof typeof categoryMap) {
+		this.categoryElement.textContent = value;
+		this.categoryElement.className = 'card__category';
+
+		const modifier = categoryMap[value];
+		if (modifier) {
+			this.categoryElement.classList.add(modifier);
 		}
 	}
 
-	render(data: IPreviewCard): HTMLElement {
-		super.render(data);
+	set description(value: string) {
+		this.descriptionElement.textContent = value;
+	}
+	
+	set price(value: number | null) {
+		this._price = value;
+		super.price = value;
+	}
 
-		this.description.textContent = data.product.description;
-		this.inBasket = data.inBasket;
-		
-		if (this.button) {
-			this.button.textContent = this.inBasket
-				? 'Удалить из корзины'
-				: 'В корзину';
+	set inBasket(value: boolean) {
+	
+		if (this._price === null) {
+			this.buttonElement.textContent = 'Недоступно';
+			this.buttonElement.disabled = true;
+			return;
 		}
+		
+		this.buttonElement.disabled = false;
 
-		return this.container;
+		this.buttonElement.textContent = value
+			? 'Удалить из корзины'
+			: 'В корзину';
 	}
 }
 

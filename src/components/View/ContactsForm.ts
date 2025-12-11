@@ -47,16 +47,12 @@ export class ContactsForm extends Form<IContactsForm> {
 		});
 	}
 
-	render(data: IContactsForm): HTMLElement {
-		super.render(data);
+	set email(value: string | undefined) {
+		this.emailInput.value = value ?? '';
+	}
 
-		if (data.email !== undefined) {
-			this.emailInput.value = data.email;
-		}
-		if (data.phone !== undefined) {
-			this.phoneInput.value = data.phone;
-		}
-
-		return this.container;
+	set phone(value: string | undefined) {
+		this.phoneInput.value = value ?? '';
 	}
 }
+

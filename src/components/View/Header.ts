@@ -17,6 +17,7 @@ export class Header extends Component<IHeader> {
 			'.header__basket-counter',
 			this.container
 		);
+
 		this.basketButton = ensureElement<HTMLButtonElement>(
 			'.header__basket',
 			this.container
@@ -30,9 +31,5 @@ export class Header extends Component<IHeader> {
 	set counter(value: number) {
 		this.counterElement.textContent = String(value);
 	}
-
-	render(data: IHeader): HTMLElement {
-		this.counter = data.counter;
-		return this.container;
-	}
 }
+
