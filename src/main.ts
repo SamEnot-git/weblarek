@@ -18,6 +18,7 @@ import { Modal } from './components/View/Modal';
 import { CatalogCard } from './components/View/CatalogCard';
 import { PreviewCard } from './components/View/PreviewCard';
 import { Basket } from './components/View/Basket';
+import { BasketItem } from './components/View/BasketItem';
 import { OrderForm } from './components/View/OrderForm';
 import { ContactsForm } from './components/View/ContactsForm';
 import { Success } from './components/View/Success';
@@ -31,7 +32,7 @@ async function main() {
 	// ==== Модели ====
 	const productsModel = new ProductList(events);
 	const cartModel = new Cart(events);
-	const buyerModel = new Buyer();
+	const buyerModel = new Buyer(events);
 
 	// ==== API ====
 	const api = new Api(API_URL);
@@ -60,7 +61,7 @@ async function main() {
 	const tplSuccess = ensureElement<HTMLTemplateElement>('#success');
 
 	// Корзина (view)
-	const basketView = new Basket(events, tplBasket, tplBasketItem);
+	const basketView = new Basket(events, tplBasket);
 
 	// Текущие формы (если открыты)
 	let orderFormView: OrderForm | null = null;
@@ -68,36 +69,47 @@ async function main() {
 
 	// ====== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ПРЕЗЕНТЕРА ======
 
-	// Построить карточки каталога по данным модели
 	function renderCatalog() {
-	const items = productsModel.getItems();
+		const items = productsModel.getItems();
 
-	const nodes = items.map((product: IProduct) => {
-		const card = new CatalogCard(events, tplCatalogCard);
+		const nodes = items.map((product: IProduct) => {
+			const card = new CatalogCard(tplCatalogCard, () => {
+				events.emit('card:select', { id: product.id });
+			});
 
-		return card.render({
-			id: product.id,
-			title: product.title,
-			price: product.price,
-			image: product.image,
-			category: product.category, 
+			return card.render({
+				title: product.title,
+				price: product.price,
+				image: product.image,
+				category: product.category,
+			});
 		});
-	});
 
-	catalog.render({ items: nodes });
-}
+		catalog.render({ items: nodes });
+	}
 
-	// Обновить header + корзину
+	function buildBasketNodes(): HTMLElement[] {
+		return cartModel.getItems().map((product: IProduct, index: number) => {
+			const item = new BasketItem(events, tplBasketItem);
+			return item.render({
+				id: product.id,
+				title: product.title,
+				price: product.price,
+				index: index + 1,
+			});
+		});
+	}
+
 	function renderBasket() {
 		header.render({ counter: cartModel.getCount() });
 
+		const nodes = buildBasketNodes();
 		basketView.render({
-			items: cartModel.getItems(),
+			items: nodes,
 			total: cartModel.getTotal(),
 		});
 	}
 
-	// Состояние формы заказа 
 	function getOrderFormState(): {
 		payment?: string;
 		address?: string;
@@ -108,7 +120,6 @@ async function main() {
 		const hasPayment = !!data.payment;
 		const hasAddress = !!data.address;
 
-		// Стартовое состояние — ничего не выбрано и не введено:	
 		if (!hasPayment && !hasAddress) {
 			return {
 				payment: data.payment,
@@ -118,9 +129,7 @@ async function main() {
 			};
 		}
 
-		// Если что-то уже заполнили — включаем валидацию
 		const errors: IValidationResult = buyerModel.validate();
-
 		const paymentError = errors.payment;
 		const addressError = errors.address;
 
@@ -135,7 +144,6 @@ async function main() {
 		};
 	}
 
-	// Состояние формы контактов
 	function getContactsFormState(): {
 		email?: string;
 		phone?: string;
@@ -146,7 +154,6 @@ async function main() {
 		const hasEmail = !!data.email;
 		const hasPhone = !!data.phone;
 
-		// Стартовое состояние — поля пустые, кнопка неактивна, ошибок нет
 		if (!hasEmail && !hasPhone) {
 			return {
 				email: data.email,
@@ -157,7 +164,6 @@ async function main() {
 		}
 
 		const errors: IValidationResult = buyerModel.validate();
-
 		const emailError = errors.email;
 		const phoneError = errors.phone;
 
@@ -174,15 +180,13 @@ async function main() {
 
 	function openOrderForm() {
 		orderFormView = new OrderForm(events, tplOrder);
-		const state = getOrderFormState();
-		const node = orderFormView.render(state);
+		const node = orderFormView.render(getOrderFormState());
 		modal.open(node);
 	}
 
 	function openContactsForm() {
 		contactsFormView = new ContactsForm(events, tplContacts);
-		const state = getContactsFormState();
-		const node = contactsFormView.render(state);
+		const node = contactsFormView.render(getContactsFormState());
 		modal.open(node);
 	}
 
@@ -191,7 +195,10 @@ async function main() {
 		if (!product) return;
 
 		const inBasket = cartModel.hasItem(product.id);
-		const preview = new PreviewCard(events, tplPreviewCard);
+
+		const preview = new PreviewCard(tplPreviewCard, (id: string) => {
+			events.emit('preview:toggle', { id });
+		});
 
 		const node = preview.render({
 			id: product.id,
@@ -207,10 +214,13 @@ async function main() {
 	}
 
 	function openBasketModal() {
+		const nodes = buildBasketNodes();
+
 		const node = basketView.render({
-			items: cartModel.getItems(),
+			items: nodes,
 			total: cartModel.getTotal(),
 		});
+
 		modal.open(node);
 	}
 
@@ -232,6 +242,15 @@ async function main() {
 
 	events.on('cart:changed', () => {
 		renderBasket();
+	});
+
+	events.on('buyer:change', () => {
+		if (orderFormView) {
+			orderFormView.render(getOrderFormState());
+		}
+		if (contactsFormView) {
+			contactsFormView.render(getContactsFormState());
+		}
 	});
 
 	// ====== СОБЫТИЯ VIEW-КОМПОНЕНТОВ ======
@@ -268,16 +287,8 @@ async function main() {
 	});
 
 	events.on('order:change', (data: { payment?: string; address?: string }) => {
-		if (data.payment !== undefined) {
-			buyerModel.setPayment(data.payment);
-		}
-		if (data.address !== undefined) {
-			buyerModel.setAddress(data.address);
-		}
-
-		if (orderFormView) {
-			orderFormView.render(getOrderFormState());
-		}
+		if (data.payment !== undefined) buyerModel.setPayment(data.payment);
+		if (data.address !== undefined) buyerModel.setAddress(data.address);
 	});
 
 	events.on('order:submit', () => {
@@ -285,18 +296,10 @@ async function main() {
 		if (!state.valid) return;
 		openContactsForm();
 	});
-
+	
 	events.on('contacts:change', (data: { email?: string; phone?: string }) => {
-		if (data.email !== undefined) {
-			buyerModel.setEmail(data.email);
-		}
-		if (data.phone !== undefined) {
-			buyerModel.setPhone(data.phone);
-		}
-
-		if (contactsFormView) {
-			contactsFormView.render(getContactsFormState());
-		}
+		if (data.email !== undefined) buyerModel.setEmail(data.email);
+		if (data.phone !== undefined) buyerModel.setPhone(data.phone);
 	});
 
 	events.on('contacts:submit', async () => {
@@ -348,3 +351,4 @@ async function main() {
 main().catch((error) => {
 	console.error('Критическая ошибка при запуске приложения:', error);
 });
+

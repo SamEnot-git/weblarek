@@ -1,103 +1,88 @@
 import { cloneTemplate, ensureElement } from '../../utils/utils';
-import type { IEvents } from '../base/Events';
 import { Card, ICardState } from './Card';
 import { CDN_URL, categoryMap } from '../../utils/constants';
 
 interface IPreviewCardState extends ICardState {
-	id: string;
-	image: string;
-	category: keyof typeof categoryMap;
-	description: string;
-	inBasket: boolean;
+  id: string;
+  image: string;
+  category: keyof typeof categoryMap;
+  description: string;
+  inBasket: boolean;
+  price: number | null;
 }
 
 export class PreviewCard extends Card<IPreviewCardState> {
-	protected imageElement: HTMLImageElement;
-	protected categoryElement: HTMLElement;
-	protected descriptionElement: HTMLElement;
-	protected buttonElement: HTMLButtonElement;
-	
-	private _id: string | null = null;	
-	private _price: number | null = null;
+  protected imageElement: HTMLImageElement;
+  protected categoryElement: HTMLElement;
+  protected descriptionElement: HTMLElement;
+  protected buttonElement: HTMLButtonElement;
 
-	constructor(
-		protected events: IEvents,
-		template: HTMLTemplateElement
-	) {
-		const container = cloneTemplate<HTMLDivElement>(template);
-		super(container);
+  constructor(
+    template: HTMLTemplateElement,
+    onToggle: (id: string) => void
+  ) {
+    const container = cloneTemplate<HTMLDivElement>(template);
+    super(container);
 
-		this.imageElement = ensureElement<HTMLImageElement>(
-			'.card__image',
-			this.container
-		);
-		this.categoryElement = ensureElement<HTMLElement>(
-			'.card__category',
-			this.container
-		);
-		this.descriptionElement = ensureElement<HTMLElement>(
-			'.card__text',
-			this.container
-		);
-		this.buttonElement = ensureElement<HTMLButtonElement>(
-			'.card__button',
-			this.container
-		);
-	
-		this.buttonElement.addEventListener('click', (event) => {
-			event.stopPropagation();
+    this.imageElement = ensureElement<HTMLImageElement>('.card__image', this.container);
+    this.categoryElement = ensureElement<HTMLElement>('.card__category', this.container);
+    this.descriptionElement = ensureElement<HTMLElement>('.card__text', this.container);
+    this.buttonElement = ensureElement<HTMLButtonElement>('.card__button', this.container);
 
-			if (!this._id) return;
-			
-			if (this._price === null) return;
+    this.buttonElement.addEventListener('click', (event) => {
+      event.stopPropagation();
 
-			this.events.emit('preview:toggle', { id: this._id });
-		});
-	}
+      const id = this.container.dataset.id;
+      const available = this.container.dataset.available === '1';
 
-	// =============== СЕТТЕРЫ  =================
+      if (!id) return;
+      if (!available) return;
 
-	set id(value: string) {
-		this._id = value;
-	}
+      onToggle(id);
+    });
+  }
 
-	set image(value: string) {
-		const src = `${CDN_URL}/${value}`;
-		this.setImage(this.imageElement, src, this.titleElement.textContent || '');
-	}
+  // =============== СЕТТЕРЫ  =================
 
-	set category(value: keyof typeof categoryMap) {
-		this.categoryElement.textContent = value;
-		this.categoryElement.className = 'card__category';
+  set id(value: string) {
+    this.container.dataset.id = value;
+  }
 
-		const modifier = categoryMap[value];
-		if (modifier) {
-			this.categoryElement.classList.add(modifier);
-		}
-	}
+  set image(value: string) {
+    const src = `${CDN_URL}/${value}`;
+    this.setImage(this.imageElement, src, this.titleElement.textContent || '');
+  }
 
-	set description(value: string) {
-		this.descriptionElement.textContent = value;
-	}
-	
-	set price(value: number | null) {
-		this._price = value;
-		super.price = value;
-	}
+  set category(value: keyof typeof categoryMap) {
+    this.categoryElement.textContent = value;
+    this.categoryElement.className = 'card__category';
 
-	set inBasket(value: boolean) {
-	
-		if (this._price === null) {
-			this.buttonElement.textContent = 'Недоступно';
-			this.buttonElement.disabled = true;
-			return;
-		}
-		
-		this.buttonElement.disabled = false;
+    const modifier = categoryMap[value];
+    if (modifier) {
+      this.categoryElement.classList.add(modifier);
+    }
+  }
 
-		this.buttonElement.textContent = value
-			? 'Удалить из корзины'
-			: 'В корзину';
-	}
+  set description(value: string) {
+    this.descriptionElement.textContent = value;
+  }
+  set price(value: number | null) {
+    this.container.dataset.available = value === null ? '0' : '1';
+    super.price = value;
+  }
+
+  set inBasket(value: boolean) {
+    const available = this.container.dataset.available === '1';
+
+    if (!available) {
+      this.buttonElement.textContent = 'Недоступно';
+      this.buttonElement.disabled = true;
+      return;
+    }
+
+    this.buttonElement.disabled = false;
+    this.buttonElement.textContent = value ? 'Удалить из корзины' : 'В корзину';
+  }
 }
+
 
